@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      padding: 40px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #1f2937;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .user-info {
+      background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-info span {
+      color: #4338ca;
+      font-weight: 500;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    select,
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 15px;
+      transition: all 0.2s;
+      background: #fff;
+    }
+
+    select:focus,
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #667eea;
+    }
+
+    .btn {
+      padding: 16px 32px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 32px;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    .stat-card .label {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .file-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      transition: background 0.2s;
+    }
+
+    .file-item:hover {
+      background: #f9fafb;
+    }
+
+    .file-item:last-child {
+      border-bottom: none;
+    }
+
+    .file-item input[type="checkbox"] {
+      margin-right: 12px;
+      width: 18px;
+      height: 18px;
+      accent-color: #667eea;
+    }
+
+    .file-info {
+      flex: 1;
+    }
+
+    .file-name {
+      font-weight: 500;
+      color: #1f2937;
+      margin-bottom: 2px;
+    }
+
+    .file-meta {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .progress-section {
+      display: none;
+      margin-top: 24px;
+    }
+
+    .progress-bar-container {
+      background: #e5e7eb;
+      border-radius: 10px;
+      height: 20px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-text {
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .results {
+      display: none;
+      margin-top: 24px;
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .result-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .result-skipped {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .result-failed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #9ca3af;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .actions button {
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        padding: 24px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .checkbox-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>
+          <svg width="36" height="36" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z"
+              fill="#0066da" />
+            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z"
+              fill="#00ac47" />
+            <path
+              d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z"
+              fill="#ea4335" />
+            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d" />
+            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc" />
+            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z"
+              fill="#ffba00" />
+          </svg>
+          Copy Shared Files
+        </h1>
+        <p>Copy files from "Shared with me" to your Google Drive</p>
+      </div>
+
+      <div class="user-info" id="userInfo">
+        <span>👤 Loading user info...</span>
+      </div>
+
+      <div class="section">
+        <div class="form-group">
+          <label>📁 Target Folder</label>
+          <select id="targetFolder">
+            <option value="">Loading folders...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>📄 File Type Filter</label>
+          <select id="fileType" onchange="loadSharedFiles()">
+            <option value="all">All Files</option>
+            <option value="documents">Documents</option>
+            <option value="spreadsheets">Spreadsheets</option>
+            <option value="presentations">Presentations</option>
+            <option value="pdfs">PDFs</option>
+            <option value="images">Images</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>🔃 Sort By</label>
+          <select id="sortBy" onchange="sortFiles()">
+            <option value="date-desc">Date (Newest First)</option>
+            <option value="date-asc">Date (Oldest First)</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="size-desc">Size (Largest First)</option>
+            <option value="size-asc">Size (Smallest First)</option>
+            <option value="owner-asc">Owner (A-Z)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>⚙️ Options</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" id="skipDuplicates" checked>
+              Skip duplicates
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+              Select all files
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="number" id="totalFiles">-</div>
+          <div class="label">Shared Files</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="selectedFiles">0</div>
+          <div class="label">Selected</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="copiedFiles">0</div>
+          <div class="label">Copied</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="loadSharedFiles()">🔄 Refresh</button>
+      </div>
+
+      <div class="file-list" id="fileList">
+        <div class="empty-state">
+          <p>Loading shared files...</p>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="copyBtn" onclick="startCopy()" disabled>
+        🚀 Start Copy
+      </button>
+
+      <div class="progress-section" id="progressSection">
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressText">Preparing...</div>
+      </div>
+
+      <div class="results" id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    let sharedFiles = [];
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('Initializing app...');
+      loadUserInfo();
+      loadFolders();
+      loadSharedFiles();
+    });
+
+    function showError(element, message) {
+      console.error(message);
+      if (element === 'userInfo') {
+        document.getElementById('userInfo').innerHTML =
+          '<span style="color: #dc2626;">⚠️ ' + message + '</span>';
+      } else if (element === 'folders') {
+        document.getElementById('targetFolder').innerHTML =
+          '<option value="root">📁 My Drive (Root) - Use this</option>';
+      } else if (element === 'files') {
+        document.getElementById('fileList').innerHTML =
+          '<div class="empty-state"><p style="color: #dc2626;">⚠️ ' + message + '</p></div>';
+      }
+    }
+
+    function loadUserInfo() {
+      console.log('Loading user info...');
+      google.script.run
+        .withSuccessHandler(function (result) {
+          console.log('User info result:', result);
+          if (result && result.success) {
+            document.getElementById('userInfo').innerHTML =
+              '<span>👤 Logged in as: <strong>' + result.email + '</strong></span>';
+          } else {
+            showError('userInfo', result ? result.error : 'Failed to load user info');
+          }
+        })
+        .withFailureHandler(function (error) {
+          showError('userInfo', 'Error: ' + error.message);
+        })
+        .getUserInfo();
+    }
+
+    function loadFolders() {
+      console.log('Loading folders...');
+      google.script.run
+        .withSuccessHandler(function (result) {
+          console.log('Folders result:', result);
+          var select = document.getElementById('targetFolder');
+          select.innerHTML = '';
+
+          if (result && result.success && result.folders) {
+            result.folders.forEach(function (folder) {
+              var option = document.createElement('option');
+              option.value = folder.id;
+              option.textContent = folder.name;
+              select.appendChild(option);
+            });
+          } else {
+            select.innerHTML = '<option value="root">📁 My Drive (Root)</option>';
+            if (result && result.error) console.error('Folder error:', result.error);
+          }
+        })
+        .withFailureHandler(function (error) {
+          showError('folders', 'Error: ' + error.message);
+        })
+        .getMyDriveFolders();
+    }
+
+    function loadSharedFiles() {
+      var fileType = document.getElementById('fileType').value;
+      console.log('Loading shared files, type:', fileType);
+      document.getElementById('fileList').innerHTML =
+        '<div class="empty-state"><div class="loading" style="border-color: #667eea; border-top-color: transparent;"></div><p>Loading files...</p></div>';
+
+      google.script.run
+        .withSuccessHandler(function (result) {
+          console.log('Files result:', result);
+          if (result && result.success) {
+            sharedFiles = result.files || [];
+            document.getElementById('totalFiles').textContent = result.count || 0;
+            renderFileList();
+            updateSelectedCount();
+          } else {
+            sharedFiles = [];
+            document.getElementById('totalFiles').textContent = 0;
+            showError('files', result ? result.error : 'Failed to load files');
+          }
+        })
+        .withFailureHandler(function (error) {
+          sharedFiles = [];
+          document.getElementById('totalFiles').textContent = 0;
+          showError('files', 'Error: ' + error.message);
+        })
+        .getSharedFiles(fileType);
+    }
+
+    function sortFiles() {
+      var sortBy = document.getElementById('sortBy').value;
+      console.log('Sorting by:', sortBy);
+
+      sharedFiles.sort(function (a, b) {
+        switch (sortBy) {
+          case 'date-desc':
+            return b.lastUpdatedRaw - a.lastUpdatedRaw;
+          case 'date-asc':
+            return a.lastUpdatedRaw - b.lastUpdatedRaw;
+          case 'name-asc':
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+          case 'name-desc':
+            return b.name.toLowerCase().localeCompare(a.name.toLowerCase());
+          case 'size-desc':
+            return (b.sizeBytes || 0) - (a.sizeBytes || 0);
+          case 'size-asc':
+            return (a.sizeBytes || 0) - (b.sizeBytes || 0);
+          case 'owner-asc':
+            return a.owner.toLowerCase().localeCompare(b.owner.toLowerCase());
+          default:
+            return 0;
+        }
+      });
+
+      renderFileList();
+      updateSelectedCount();
+    }
+
+
+    function renderFileList() {
+      var container = document.getElementById('fileList');
+
+      if (sharedFiles.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state">' +
+          '<p>📭 No shared files found</p>' +
+          '</div>';
+        return;
+      }
+
+      var html = '';
+      sharedFiles.forEach(function (file, index) {
+        html +=
+          '<div class="file-item">' +
+          '<input type="checkbox" class="file-checkbox" data-id="' + file.id + '" onchange="updateSelectedCount()">' +
+          '<div class="file-info">' +
+          '<div class="file-name">' + escapeHtml(file.name) + '</div>' +
+          '<div class="file-meta">' + file.size + ' • ' + file.owner + ' • ' + file.lastUpdated + '</div>' +
+          '</div>' +
+          '</div>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function toggleSelectAll() {
+      var checked = document.getElementById('selectAll').checked;
+      var checkboxes = document.querySelectorAll('.file-checkbox');
+      checkboxes.forEach(function (cb) { cb.checked = checked; });
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      var checkboxes = document.querySelectorAll('.file-checkbox:checked');
+      var count = checkboxes.length;
+      document.getElementById('selectedFiles').textContent = count;
+      document.getElementById('copyBtn').disabled = count === 0;
+    }
+
+    function getSelectedFileIds() {
+      var checkboxes = document.querySelectorAll('.file-checkbox:checked');
+      var ids = [];
+      checkboxes.forEach(function (cb) { ids.push(cb.dataset.id); });
+      return ids;
+    }
+
+    function startCopy() {
+      var fileIds = getSelectedFileIds();
+      var targetFolderId = document.getElementById('targetFolder').value;
+      var skipDuplicates = document.getElementById('skipDuplicates').checked;
+
+      if (fileIds.length === 0) {
+        alert('Please select at least one file to copy');
+        return;
+      }
+
+      // Show progress
+      document.getElementById('progressSection').style.display = 'block';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('copyBtn').disabled = true;
+      document.getElementById('copyBtn').innerHTML = '<span class="loading"></span> Copying...';
+
+      updateProgress(0, fileIds.length);
+
+      google.script.run
+        .withSuccessHandler(function (result) {
+          if (result.success) {
+            showResults(result.results);
+            document.getElementById('copiedFiles').textContent = result.results.success;
+          } else {
+            alert('Error: ' + result.error);
+          }
+
+          document.getElementById('copyBtn').disabled = false;
+          document.getElementById('copyBtn').innerHTML = '🚀 Start Copy';
+        })
+        .withFailureHandler(function (error) {
+          alert('Error: ' + error);
+          document.getElementById('copyBtn').disabled = false;
+          document.getElementById('copyBtn').innerHTML = '🚀 Start Copy';
+        })
+        .copyFiles(fileIds, targetFolderId, skipDuplicates);
+    }
+
+    function updateProgress(current, total) {
+      var percent = total > 0 ? Math.round((current / total) * 100) : 0;
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('progressText').textContent = current + ' of ' + total + ' files processed';
+    }
+
+    function showResults(results) {
+      updateProgress(results.success + results.skipped + results.failed,
+        results.success + results.skipped + results.failed);
+
+      var html = '<h3 style="margin: 20px 0 16px; color: #1f2937;">📊 Results</h3>';
+
+      html += '<div style="display: flex; gap: 12px; margin-bottom: 16px;">';
+      html += '<span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 20px; font-size: 13px;">✅ ' + results.success + ' copied</span>';
+      html += '<span style="background: #fef3c7; color: #92400e; padding: 6px 12px; border-radius: 20px; font-size: 13px;">⏭️ ' + results.skipped + ' skipped</span>';
+      html += '<span style="background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 20px; font-size: 13px;">❌ ' + results.failed + ' failed</span>';
+      html += '</div>';
+
+      results.details.forEach(function (item) {
+        var cssClass = 'result-' + item.status;
+        var icon = item.status === 'success' ? '✅' : (item.status === 'skipped' ? '⏭️' : '❌');
+        html += '<div class="result-item ' + cssClass + '">' + icon + ' ' + escapeHtml(item.name);
+        if (item.reason) html += ' - ' + item.reason;
+        html += '</div>';
+      });
+
+      document.getElementById('results').innerHTML = html;
+      document.getElementById('results').style.display = 'block';
+    }
+  </script>
+</body>
+
+</html>
