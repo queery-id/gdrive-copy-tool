@@ -1,13 +1,13 @@
 /**
  * Google Drive Copy Tool
- * Copy files from "Shared with me" to My Drive
+ * Copy files and folders from "Shared with me" to My Drive
  * 
  * @author queery-id
  * @website https://queery.my.id/
  * @github https://github.com/queery-id
  * @license MIT
- * @version 1.0.0
- * @date 2026-01-01
+ * @version 1.1.0
+ * @date 2026-01-05
  */
 
 /**
@@ -76,69 +76,132 @@ function getMyDriveFolders() {
 }
 
 /**
- * Get list of files shared with the user
+ * Get list of files and folders shared with the user
  */
 function getSharedFiles(fileType) {
   try {
-    var files = [];
-    var query = 'sharedWithMe = true';
+    var items = [];
+    var fileCount = 0;
+    var folderCount = 0;
+    var maxFiles = 450;   // Reserve slots for files
+    var maxFolders = 50;  // Reserve slots for folders
     
-    // Add file type filter
-    if (fileType && fileType !== 'all') {
-      var mimeTypes = {
-        'documents': "mimeType = 'application/vnd.google-apps.document'",
-        'spreadsheets': "mimeType = 'application/vnd.google-apps.spreadsheet'",
-        'presentations': "mimeType = 'application/vnd.google-apps.presentation'",
-        'pdfs': "mimeType = 'application/pdf'",
-        'images': "mimeType contains 'image/'",
-        'folders': "mimeType = 'application/vnd.google-apps.folder'"
-      };
+    // If filtering for folders only, skip file search
+    var searchFiles = (fileType !== 'folders');
+    var searchFolders = (fileType === 'all' || fileType === 'folders');
+    
+    // Search for shared FILES first
+    if (searchFiles) {
+      var fileQuery = 'sharedWithMe = true';
       
-      if (mimeTypes[fileType]) {
-        query += ' and ' + mimeTypes[fileType];
+      // Add file type filter
+      if (fileType && fileType !== 'all') {
+        var mimeTypes = {
+          'documents': "mimeType = 'application/vnd.google-apps.document'",
+          'spreadsheets': "mimeType = 'application/vnd.google-apps.spreadsheet'",
+          'presentations': "mimeType = 'application/vnd.google-apps.presentation'",
+          'pdfs': "mimeType = 'application/pdf'",
+          'images': "mimeType contains 'image/'"
+        };
+        
+        if (mimeTypes[fileType]) {
+          fileQuery += ' and ' + mimeTypes[fileType];
+        }
+      }
+      
+      Logger.log('File Query: ' + fileQuery);
+      
+      var fileIterator = DriveApp.searchFiles(fileQuery);
+      
+      while (fileIterator.hasNext() && fileCount < maxFiles) {
+        var file = fileIterator.next();
+        try {
+          // Skip folders from file search (they shouldn't appear but just in case)
+          if (file.getMimeType() === 'application/vnd.google-apps.folder') continue;
+          
+          var ownerName = 'Unknown';
+          try {
+            var owner = file.getOwner();
+            if (owner) ownerName = owner.getName() || owner.getEmail() || 'Unknown';
+          } catch(e) {}
+          
+          var lastUpdated = file.getLastUpdated();
+          
+          items.push({
+            id: file.getId(),
+            name: file.getName(),
+            type: file.getMimeType(),
+            isFolder: false,
+            itemCount: 0,
+            size: formatFileSize(file.getSize()),
+            sizeBytes: file.getSize(),
+            owner: ownerName,
+            lastUpdated: lastUpdated.toLocaleDateString(),
+            lastUpdatedRaw: lastUpdated.getTime()
+          });
+          fileCount++;
+        } catch (e) {
+          Logger.log('Skipping file: ' + e.toString());
+        }
       }
     }
     
-    Logger.log('Query: ' + query);
-    
-    var fileIterator = DriveApp.searchFiles(query);
-    var count = 0;
-    var maxFiles = 500; // Increased limit for more files
-    
-    while (fileIterator.hasNext() && count < maxFiles) {
-      var file = fileIterator.next();
+    // Search for shared FOLDERS (separate API call)
+    if (searchFolders) {
+      Logger.log('Searching for shared folders...');
+      
       try {
-        var ownerName = 'Unknown';
-        try {
-          var owner = file.getOwner();
-          if (owner) ownerName = owner.getName() || owner.getEmail() || 'Unknown';
-        } catch(e) {}
+        var folderIterator = DriveApp.searchFolders('sharedWithMe = true');
         
-        var lastUpdated = file.getLastUpdated();
-        
-        files.push({
-          id: file.getId(),
-          name: file.getName(),
-          type: file.getMimeType(),
-          size: formatFileSize(file.getSize()),
-          sizeBytes: file.getSize(),
-          owner: ownerName,
-          lastUpdated: lastUpdated.toLocaleDateString(),
-          lastUpdatedRaw: lastUpdated.getTime() // For sorting
-        });
-        count++;
-      } catch (e) {
-        Logger.log('Skipping file: ' + e.toString());
+        while (folderIterator.hasNext() && folderCount < maxFolders) {
+          var folder = folderIterator.next();
+          try {
+            var ownerName = 'Unknown';
+            try {
+              var owner = folder.getOwner();
+              if (owner) ownerName = owner.getName() || owner.getEmail() || 'Unknown';
+            } catch(e) {}
+            
+            var lastUpdated = folder.getLastUpdated();
+            
+            // Count items in folder
+            var itemCount = 0;
+            try {
+              var folderFiles = folder.getFiles();
+              var folderFolders = folder.getFolders();
+              while (folderFiles.hasNext()) { folderFiles.next(); itemCount++; }
+              while (folderFolders.hasNext()) { folderFolders.next(); itemCount++; }
+            } catch(e) {}
+            
+            items.push({
+              id: folder.getId(),
+              name: folder.getName(),
+              type: 'application/vnd.google-apps.folder',
+              isFolder: true,
+              itemCount: itemCount,
+              size: itemCount + ' items',
+              sizeBytes: 0,
+              owner: ownerName,
+              lastUpdated: lastUpdated.toLocaleDateString(),
+              lastUpdatedRaw: lastUpdated.getTime()
+            });
+            folderCount++;
+          } catch (e) {
+            Logger.log('Skipping folder: ' + e.toString());
+          }
+        }
+      } catch(e) {
+        Logger.log('Folder search error: ' + e.toString());
       }
     }
     
     // Sort by newest first (default)
-    files.sort(function(a, b) {
+    items.sort(function(a, b) {
       return b.lastUpdatedRaw - a.lastUpdatedRaw;
     });
     
-    Logger.log('Loaded ' + files.length + ' shared files');
-    return { success: true, files: files, count: files.length };
+    Logger.log('Loaded ' + items.length + ' shared items (files + folders)');
+    return { success: true, files: items, count: items.length };
   } catch (e) {
     Logger.log('getSharedFiles error: ' + e.toString());
     return { success: false, error: e.toString(), files: [], count: 0 };
@@ -146,9 +209,9 @@ function getSharedFiles(fileType) {
 }
 
 /**
- * Copy selected files to target folder
+ * Copy selected files/folders to target folder
  */
-function copyFiles(fileIds, targetFolderId, skipDuplicates) {
+function copyFiles(itemIds, targetFolderId, skipDuplicates) {
   var results = {
     success: 0,
     skipped: 0,
@@ -164,45 +227,88 @@ function copyFiles(fileIds, targetFolderId, skipDuplicates) {
       targetFolder = DriveApp.getFolderById(targetFolderId);
     }
     
-    // Get existing file names in target folder if skip duplicates
+    // Get existing names in target folder if skip duplicates
     var existingNames = {};
+    var existingFolderNames = {};
     if (skipDuplicates) {
       var existingFiles = targetFolder.getFiles();
       while (existingFiles.hasNext()) {
-        var ef = existingFiles.next();
-        existingNames[ef.getName().toLowerCase()] = true;
+        existingNames[existingFiles.next().getName().toLowerCase()] = true;
+      }
+      var existingFolders = targetFolder.getFolders();
+      while (existingFolders.hasNext()) {
+        existingFolderNames[existingFolders.next().getName().toLowerCase()] = true;
       }
     }
     
-    for (var i = 0; i < fileIds.length; i++) {
+    for (var i = 0; i < itemIds.length; i++) {
       try {
-        var file = DriveApp.getFileById(fileIds[i]);
-        var fileName = file.getName();
+        // Try to get as file first
+        var item;
+        var isFolder = false;
         
-        // Check for duplicates
-        if (skipDuplicates && existingNames[fileName.toLowerCase()]) {
-          results.skipped++;
-          results.details.push({
-            name: fileName,
-            status: 'skipped',
-            reason: 'Already exists'
-          });
-          continue;
+        try {
+          item = DriveApp.getFileById(itemIds[i]);
+          isFolder = (item.getMimeType() === 'application/vnd.google-apps.folder');
+        } catch(e) {
+          // If file fails, try as folder
+          item = DriveApp.getFolderById(itemIds[i]);
+          isFolder = true;
         }
         
-        // Copy the file
-        var copiedFile = file.makeCopy(fileName, targetFolder);
-        results.success++;
-        results.details.push({
-          name: fileName,
-          status: 'success',
-          newId: copiedFile.getId()
-        });
+        var itemName = item.getName();
+        
+        if (isFolder) {
+          // Handle folder copy
+          var sourceFolder = DriveApp.getFolderById(itemIds[i]);
+          
+          // Check for duplicate folder
+          if (skipDuplicates && existingFolderNames[itemName.toLowerCase()]) {
+            results.skipped++;
+            results.details.push({
+              name: '📁 ' + itemName,
+              status: 'skipped',
+              reason: 'Folder already exists'
+            });
+            continue;
+          }
+          
+          // Copy folder recursively
+          var folderResult = copyFolderRecursive(sourceFolder, targetFolder, skipDuplicates);
+          results.success += folderResult.success;
+          results.skipped += folderResult.skipped;
+          results.failed += folderResult.failed;
+          results.details.push({
+            name: '📁 ' + itemName,
+            status: 'success',
+            reason: 'Copied ' + folderResult.success + ' files'
+          });
+          
+        } else {
+          // Handle file copy (existing logic)
+          if (skipDuplicates && existingNames[itemName.toLowerCase()]) {
+            results.skipped++;
+            results.details.push({
+              name: itemName,
+              status: 'skipped',
+              reason: 'Already exists'
+            });
+            continue;
+          }
+          
+          var copiedFile = item.makeCopy(itemName, targetFolder);
+          results.success++;
+          results.details.push({
+            name: itemName,
+            status: 'success',
+            newId: copiedFile.getId()
+          });
+        }
         
       } catch (e) {
         results.failed++;
         results.details.push({
-          name: fileIds[i],
+          name: itemIds[i],
           status: 'failed',
           reason: e.toString()
         });
@@ -214,6 +320,63 @@ function copyFiles(fileIds, targetFolderId, skipDuplicates) {
     Logger.log('copyFiles error: ' + e.toString());
     return { success: false, error: e.toString() };
   }
+}
+
+/**
+ * Recursively copy a folder and all its contents
+ */
+function copyFolderRecursive(sourceFolder, destParent, skipDuplicates) {
+  var result = { success: 0, skipped: 0, failed: 0 };
+  
+  try {
+    // Create new folder in destination
+    var newFolder = destParent.createFolder(sourceFolder.getName());
+    
+    // Get existing names if skip duplicates
+    var existingNames = {};
+    if (skipDuplicates) {
+      var existingFiles = newFolder.getFiles();
+      while (existingFiles.hasNext()) {
+        existingNames[existingFiles.next().getName().toLowerCase()] = true;
+      }
+    }
+    
+    // Copy all files in the folder
+    var files = sourceFolder.getFiles();
+    while (files.hasNext()) {
+      try {
+        var file = files.next();
+        var fileName = file.getName();
+        
+        if (skipDuplicates && existingNames[fileName.toLowerCase()]) {
+          result.skipped++;
+          continue;
+        }
+        
+        file.makeCopy(fileName, newFolder);
+        result.success++;
+      } catch(e) {
+        result.failed++;
+        Logger.log('Failed to copy file in folder: ' + e.toString());
+      }
+    }
+    
+    // Recursively copy subfolders
+    var subfolders = sourceFolder.getFolders();
+    while (subfolders.hasNext()) {
+      var subfolder = subfolders.next();
+      var subResult = copyFolderRecursive(subfolder, newFolder, skipDuplicates);
+      result.success += subResult.success;
+      result.skipped += subResult.skipped;
+      result.failed += subResult.failed;
+    }
+    
+  } catch(e) {
+    Logger.log('copyFolderRecursive error: ' + e.toString());
+    result.failed++;
+  }
+  
+  return result;
 }
 
 /**

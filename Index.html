@@ -242,6 +242,15 @@
       color: #9ca3af;
     }
 
+    .folder-item {
+      background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+      border-left: 3px solid #667eea;
+    }
+
+    .folder-item:hover {
+      background: linear-gradient(135deg, #e8f0ff 0%, #dbe7fd 100%);
+    }
+
     .progress-section {
       display: none;
       margin-top: 24px;
@@ -609,11 +618,16 @@
 
       var html = '';
       sharedFiles.forEach(function (file, index) {
+        var icon = file.isFolder ? '📁' : '📄';
+        var itemClass = file.isFolder ? 'file-item folder-item' : 'file-item';
+        var namePrefix = file.isFolder ? '<span style="color: #667eea; font-weight: 600;">' : '';
+        var nameSuffix = file.isFolder ? '</span>' : '';
+
         html +=
-          '<div class="file-item">' +
+          '<div class="' + itemClass + '">' +
           '<input type="checkbox" class="file-checkbox" data-id="' + file.id + '" onchange="updateSelectedCount()">' +
           '<div class="file-info">' +
-          '<div class="file-name">' + escapeHtml(file.name) + '</div>' +
+          '<div class="file-name">' + icon + ' ' + namePrefix + escapeHtml(file.name) + nameSuffix + '</div>' +
           '<div class="file-meta">' + file.size + ' • ' + file.owner + ' • ' + file.lastUpdated + '</div>' +
           '</div>' +
           '</div>';
