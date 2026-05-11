@@ -360,6 +360,117 @@
         flex-direction: column;
       }
     }
+
+    /* URL Input Section */
+    .url-section {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 2px dashed #38bdf8;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .url-section .section-title {
+      color: #0369a1;
+    }
+
+    .url-textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      resize: vertical;
+      min-height: 80px;
+      transition: all 0.2s;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .url-textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .url-textarea::placeholder {
+      color: #9ca3af;
+      font-size: 13px;
+    }
+
+    .url-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      align-items: center;
+    }
+
+    .btn-add-url {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      color: white;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-add-url:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+    }
+
+    .btn-add-url:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .url-hint {
+      font-size: 12px;
+      color: #6b7280;
+      flex: 1;
+    }
+
+    .url-errors {
+      margin-top: 12px;
+    }
+
+    .url-error-item {
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    /* Visual marker for URL-added items */
+    .url-added-item {
+      border-left: 3px solid #0ea5e9;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e8f4fd 100%);
+    }
+
+    .url-added-item:hover {
+      background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+    }
+
+    .url-badge {
+      background: #0ea5e9;
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 
@@ -436,6 +547,24 @@
             </label>
           </div>
         </div>
+      </div>
+
+      <!-- URL Input Section -->
+      <div class="url-section">
+        <div class="section-title">🔗 Add by URL</div>
+        <textarea 
+          id="urlInput" 
+          class="url-textarea" 
+          placeholder="Paste Google Drive URL here...&#10;Supports: file, folder, docs, sheets, slides&#10;Paste multiple URLs (one per line)"
+          rows="3"
+        ></textarea>
+        <div class="url-actions">
+          <button class="btn-add-url" id="addUrlBtn" onclick="addByUrl()">
+            ➕ Add to List
+          </button>
+          <span class="url-hint">💡 Paste one or more Google Drive URLs, one per line</span>
+        </div>
+        <div class="url-errors" id="urlErrors"></div>
       </div>
 
       <div class="stats">
@@ -620,14 +749,21 @@
       sharedFiles.forEach(function (file, index) {
         var icon = file.isFolder ? '📁' : '📄';
         var itemClass = file.isFolder ? 'file-item folder-item' : 'file-item';
+
+        // Add URL marker class
+        if (file.addedViaUrl) {
+          itemClass = file.isFolder ? 'file-item url-added-item folder-item' : 'file-item url-added-item';
+        }
+
         var namePrefix = file.isFolder ? '<span style="color: #667eea; font-weight: 600;">' : '';
         var nameSuffix = file.isFolder ? '</span>' : '';
+        var urlBadge = file.addedViaUrl ? '<span class="url-badge">URL</span>' : '';
 
         html +=
           '<div class="' + itemClass + '">' +
           '<input type="checkbox" class="file-checkbox" data-id="' + file.id + '" onchange="updateSelectedCount()">' +
           '<div class="file-info">' +
-          '<div class="file-name">' + icon + ' ' + namePrefix + escapeHtml(file.name) + nameSuffix + '</div>' +
+          '<div class="file-name">' + icon + ' ' + namePrefix + escapeHtml(file.name) + nameSuffix + urlBadge + '</div>' +
           '<div class="file-meta">' + file.size + ' • ' + file.owner + ' • ' + file.lastUpdated + '</div>' +
           '</div>' +
           '</div>';
@@ -729,6 +865,81 @@
 
       document.getElementById('results').innerHTML = html;
       document.getElementById('results').style.display = 'block';
+    }
+
+    // ========== URL INPUT FUNCTIONS ==========
+
+    function addByUrl() {
+      var textarea = document.getElementById('urlInput');
+      var urls = textarea.value.split('\n').filter(function(u) { return u.trim() !== ''; });
+
+      if (urls.length === 0) {
+        alert('Please paste at least one Google Drive URL');
+        return;
+      }
+
+      // Show loading state
+      var addBtn = document.getElementById('addUrlBtn');
+      addBtn.disabled = true;
+      addBtn.innerHTML = '<span class="loading" style="width:16px;height:16px;border-width:2px;"></span> Resolving...';
+      document.getElementById('urlErrors').innerHTML = '';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          addBtn.disabled = false;
+          addBtn.innerHTML = '➕ Add to List';
+
+          if (result && result.success) {
+            // Add resolved items to sharedFiles (prepend, so they appear at top)
+            if (result.items && result.items.length > 0) {
+              // Check for duplicates against existing sharedFiles
+              result.items.forEach(function(newItem) {
+                var exists = sharedFiles.some(function(f) { return f.id === newItem.id; });
+                if (!exists) {
+                  sharedFiles.unshift(newItem); // Add to beginning
+                }
+              });
+
+              // Re-render
+              renderFileList();
+              document.getElementById('totalFiles').textContent = sharedFiles.length;
+
+              // Auto-select newly added items
+              setTimeout(function() {
+                var checkboxes = document.querySelectorAll('.file-checkbox');
+                result.items.forEach(function(item) {
+                  checkboxes.forEach(function(cb) {
+                    if (cb.dataset.id === item.id) {
+                      cb.checked = true;
+                    }
+                  });
+                });
+                updateSelectedCount();
+              }, 100);
+
+              // Clear textarea
+              textarea.value = '';
+            }
+
+            // Show errors if any
+            if (result.errors && result.errors.length > 0) {
+              var errorHtml = '';
+              result.errors.forEach(function(err) {
+                var shortUrl = err.url.length > 60 ? err.url.substring(0, 60) + '...' : err.url;
+                errorHtml += '<div class="url-error-item">❌ ' + escapeHtml(shortUrl) + ' — ' + escapeHtml(err.error) + '</div>';
+              });
+              document.getElementById('urlErrors').innerHTML = errorHtml;
+            }
+          } else {
+            alert('Error: ' + (result ? result.error : 'Unknown error'));
+          }
+        })
+        .withFailureHandler(function(error) {
+          addBtn.disabled = false;
+          addBtn.innerHTML = '➕ Add to List';
+          alert('Error resolving URLs: ' + error.message);
+        })
+        .addItemsByUrls(urls);
     }
   </script>
 </body>
