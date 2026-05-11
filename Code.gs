@@ -391,6 +391,181 @@ function formatFileSize(bytes) {
 }
 
 /**
+ * Parse Google Drive URL to extract file/folder ID
+ * Supports multiple URL formats:
+ * - https://drive.google.com/file/d/{id}/view
+ * - https://drive.google.com/drive/folders/{id}
+ * - https://docs.google.com/document/d/{id}/edit
+ * - https://docs.google.com/spreadsheets/d/{id}/edit
+ * - https://docs.google.com/presentation/d/{id}/edit
+ * - https://drive.google.com/open?id={id}
+ * - Raw ID (no URL)
+ */
+function parseGoogleDriveUrl(url) {
+  if (!url || url.trim() === '') {
+    return { success: false, error: 'Empty URL' };
+  }
+  
+  url = url.trim();
+  
+  // Pattern 1: /d/{id}/ format (files, docs, sheets, slides)
+  var match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return { success: true, id: match[1] };
+  
+  // Pattern 2: /folders/{id} format
+  match = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (match) return { success: true, id: match[1] };
+  
+  // Pattern 3: ?id={id} format (open?id=)
+  match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match) return { success: true, id: match[1] };
+  
+  // Pattern 4: Raw ID (no slashes, no dots, looks like a Drive ID)
+  if (/^[a-zA-Z0-9_-]{10,}$/.test(url)) {
+    return { success: true, id: url };
+  }
+  
+  return { success: false, error: 'Could not extract ID from URL: ' + url };
+}
+
+/**
+ * Get file/folder info by ID (for URL-added items)
+ */
+function getItemInfoById(fileId) {
+  try {
+    // Try as file first
+    try {
+      var file = DriveApp.getFileById(fileId);
+      var isFolder = (file.getMimeType() === 'application/vnd.google-apps.folder');
+      
+      if (isFolder) {
+        // Re-fetch as folder for proper metadata
+        return getFolderInfoById(fileId);
+      }
+      
+      var ownerName = 'Unknown';
+      try {
+        var owner = file.getOwner();
+        if (owner) ownerName = owner.getName() || owner.getEmail() || 'Unknown';
+      } catch(e) {}
+      
+      var lastUpdated = file.getLastUpdated();
+      
+      return {
+        success: true,
+        item: {
+          id: file.getId(),
+          name: file.getName(),
+          type: file.getMimeType(),
+          isFolder: false,
+          itemCount: 0,
+          size: formatFileSize(file.getSize()),
+          sizeBytes: file.getSize(),
+          owner: ownerName,
+          lastUpdated: lastUpdated.toLocaleDateString(),
+          lastUpdatedRaw: lastUpdated.getTime(),
+          addedViaUrl: true
+        }
+      };
+    } catch(e) {
+      // Not a file, try as folder
+      return getFolderInfoById(fileId);
+    }
+  } catch(e) {
+    return { success: false, error: 'Cannot access item: ' + e.toString() };
+  }
+}
+
+/**
+ * Helper: Get folder info by ID
+ */
+function getFolderInfoById(folderId) {
+  try {
+    var folder = DriveApp.getFolderById(folderId);
+    
+    var ownerName = 'Unknown';
+    try {
+      var owner = folder.getOwner();
+      if (owner) ownerName = owner.getName() || owner.getEmail() || 'Unknown';
+    } catch(e) {}
+    
+    var lastUpdated = folder.getLastUpdated();
+    
+    // Count items in folder
+    var itemCount = 0;
+    try {
+      var folderFiles = folder.getFiles();
+      var folderFolders = folder.getFolders();
+      while (folderFiles.hasNext()) { folderFiles.next(); itemCount++; }
+      while (folderFolders.hasNext()) { folderFolders.next(); itemCount++; }
+    } catch(e) {}
+    
+    return {
+      success: true,
+      item: {
+        id: folder.getId(),
+        name: folder.getName(),
+        type: 'application/vnd.google-apps.folder',
+        isFolder: true,
+        itemCount: itemCount,
+        size: itemCount + ' items',
+        sizeBytes: 0,
+        owner: ownerName,
+        lastUpdated: lastUpdated.toLocaleDateString(),
+        lastUpdatedRaw: lastUpdated.getTime(),
+        addedViaUrl: true
+      }
+    };
+  } catch(e) {
+    return { success: false, error: 'Cannot access folder: ' + e.toString() };
+  }
+}
+
+/**
+ * Bulk resolve URLs to item metadata
+ * @param {string[]} urls - Array of Google Drive URLs
+ * @returns {Object} { success: boolean, items: [], errors: [] }
+ */
+function addItemsByUrls(urls) {
+  var items = [];
+  var errors = [];
+  
+  for (var i = 0; i < urls.length; i++) {
+    var url = urls[i].trim();
+    if (!url) continue; // Skip empty lines
+    
+    var parsed = parseGoogleDriveUrl(url);
+    
+    if (!parsed.success) {
+      errors.push({ url: url, error: parsed.error });
+      continue;
+    }
+    
+    var itemInfo = getItemInfoById(parsed.id);
+    
+    if (!itemInfo.success) {
+      errors.push({ url: url, error: itemInfo.error });
+      continue;
+    }
+    
+    // Check for duplicate (same ID already in items)
+    var isDuplicate = false;
+    for (var j = 0; j < items.length; j++) {
+      if (items[j].id === itemInfo.item.id) {
+        isDuplicate = true;
+        break;
+      }
+    }
+    
+    if (!isDuplicate) {
+      items.push(itemInfo.item);
+    }
+  }
+  
+  return { success: true, items: items, errors: errors };
+}
+
+/**
  * Test function - run this manually to verify Drive access
  */
 function testDriveAccess() {
